@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>氣象資訊顯示</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f4f4f4;
+            overflow: auto;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            max-width: 900px;
+            width: 100%;
+            box-sizing: border-box;
+            position: relative;
+        }
+        h1 {
+            font-size: 28px;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        .controls {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+        }
+        select {
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background-color: #fff;
+            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+        .weather-data {
+            margin-top: 10px;
+            text-align: left;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .weather-item {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        .weather-item strong {
+            display: block;
+            color: #555;
+        }
+        hr {
+            border: 0;
+            border-top: 1px solid #ddd;
+            margin: 20px 0;
+        }
+        .credits {
+            position: absolute;
+            bottom: 10px;
+            right: 20px;
+            font-size: 12px;
+            color: #777;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>即時氣象資訊</h1>
+        <div class="controls">
+            <select id="countySelect">
+                <option value="">選擇市區</option>
+            </select>
+            <select id="townSelect">
+                <option value="">選擇鄉鎮</option>
+            </select>
+        </div>
+        <div id="weatherInfo" class="weather-data">
+            正在載入資料...
+        </div>
+        <div class="credits">
+            由XQuake 製作，資料來源：中央氣象署 CWA
+        </div>
+    </div>
+
+    <script>
+        const apiUrl = 'https://opendata.cwa.gov.tw/api/v1/rest/datastore/O-A0001-001?Authorization=CWA-19B695DB-613E-496B-A962-8A9399FD36A3&format=JSON';
+
+        let allStations = [];
+        let counties = [];
+        let towns = {};
+        let selectedCounty = '';
+        let selectedTown = '';
+
+        function fetchWeatherData() {
+            fetch(apiUrl)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok ' + response.statusText);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('API 返回的資料:', data);
+                    allStations = data.records.Station || [];
+                    populateSelectors();
+                    updateSelectors();
+                    filterStations();
+                })
+                .catch(error => {
+                    document.getElementById('weatherInfo').innerHTML = '無法取得資料，錯誤信息: ' + error.message;
+                    console.error('Error fetching data:', error);
+                });
+        }
+
+        function populateSelectors() {
+            const countySelect = document.getElementById('countySelect');
+            const townSelect = document.getElementById('townSelect');
+
+            // 提取唯一的市區和鄉鎮
+            counties = [...new Set(allStations.map(station => station.GeoInfo?.CountyName))];
+            towns = allStations.reduce((acc, station) => {
+                const county = station.GeoInfo?.CountyName;
+                const town = station.GeoInfo?.TownName;
+                if (county && town) {
+                    if (!acc[county]) {
+                        acc[county] = new Set();
+                    }
+                    acc[county].add(town);
+                }
+                return acc;
+            }, {});
+
+            // 填充市區下拉選單
+            const countyOptions = '<option value="">選擇市區</option>' + counties.map(county => `<option value="${county}">${county}</option>`).join('');
+            countySelect.innerHTML = countyOptions;
+
+            // 設置事件監聽器
+            countySelect.addEventListener('change', updateTowns);
+            townSelect.addEventListener('change', filterStations);
+        }
+
+        function updateTowns() {
+            const county = document.getElementById('countySelect').value;
+            selectedCounty = county;
+            const townSelect = document.getElementById('townSelect');
+
+            // 根據選擇的市區更新鄉鎮選項
+            townSelect.innerHTML = '<option value="">選擇鄉鎮</option>' + (towns[county] ? [...towns[county]].map(town => `<option value="${town}">${town}</option>`).join('') : '');
+
+            // 重新過濾顯示資料
+            filterStations();
+        }
+
+        function updateSelectors() {
+            const countySelect = document.getElementById('countySelect');
+            const townSelect = document.getElementById('townSelect');
+            
+            // 設置市區選擇器
+            countySelect.value = selectedCounty;
+
+            // 根據選擇的市區設置鄉鎮選擇器
+            updateTowns();
+            townSelect.value = selectedTown;
+        }
+
+        function filterStations() {
+            const county = document.getElementById('countySelect').value;
+            const town = document.getElementById('townSelect').value;
+            selectedCounty = county;
+            selectedTown = town;
+
+            const filteredStations = allStations.filter(station => {
+                return (!county || station.GeoInfo?.CountyName === county) &&
+                       (!town || station.GeoInfo?.TownName === town);
+            });
+
+            displayWeatherData(filteredStations);
+        }
+
+        function formatDateTime(dateTime) {
+            if (!dateTime) return '資料缺失';
+            const date = new Date(dateTime);
+            return date.toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' });
+        }
+
+        function displayWeatherData(stations) {
+            if (!stations || stations.length === 0) {
+                document.getElementById('weatherInfo').innerHTML = '無可顯示的氣象站資料。';
+                return;
+            }
+
+            let htmlContent = '';
+
+            stations.forEach(station => {
+                const geoInfo = station.GeoInfo || {};
+                const weatherElement = station.WeatherElement || {};
+                const gustInfo = weatherElement.GustInfo || {};
+
+                htmlContent += `
+                    <div class="weather-item">
+                        <strong>觀測站名稱:</strong> ${station.StationName || '資料缺失'}
+                    </div>
+                    <div class="weather-item">
+                        <strong>觀測站代碼:</strong> ${station.StationId || '資料缺失'}
+                    </div>
+                    <div class="weather-item">
+                        <strong>觀測時間:</strong> ${formatDateTime(station.ObsTime?.DateTime) || '資料缺失'}
+                    </div>
+                    <div class="weather-item">
+                        <strong>經度:</strong> ${geoInfo.Coordinates?.[0]?.StationLongitude || '資料缺失'}
+                    </div>
+                    <div class="weather-item">
+                        <strong>緯度:</strong> ${geoInfo.Coordinates?.[0]?.StationLatitude || '資料缺失'}
+                    </div>
+                    <div class="weather-item">
+                        <strong>海拔高度:</strong> ${geoInfo.StationAltitude || '資料缺失'}
+                    </div>
+                    <div class="weather-item">
+                        <strong>縣市:</strong> ${geoInfo.CountyName || '資料缺失'}
+                    </div>
+                    <div class="weather-item">
+                        <strong>鄉鎮:</strong> ${geoInfo.TownName || '資料缺失'}
+                    </div>
+                    <div class="weather-item">
+                        <strong>天氣:</strong> ${weatherElement.Weather || '資料缺失'}
+                    </div>
+                    <div class="weather-item">
+                          <strong>降水量:</strong> ${weatherElement.Now?.Precipitation || '資料缺失'}
+                    </div>
+                    <div class="weather-item">
+                        <strong>風向:</strong> ${weatherElement.WindDirection || '資料缺失'}
+                    </div>
+                    <div class="weather-item">
+                        <strong>風速:</strong> ${weatherElement.WindSpeed || '資料缺失'}
+                    </div>
+                    <div class="weather-item">
+                        <strong>氣溫:</strong> ${weatherElement.AirTemperature || '資料缺失'}
+                    </div>
+                    <div class="weather-item">
+                        <strong>相對濕度:</strong> ${weatherElement.RelativeHumidity || '資料缺失'}
+                    </div>
+                    <div class="weather-item">
+                        <strong>氣壓:</strong> ${weatherElement.AirPressure || '資料缺失'}
+                    </div>
+                    <div class="weather-item">
+                        <strong>最大陣風速:</strong> ${gustInfo.PeakGustSpeed !== -99.0 ? gustInfo.PeakGustSpeed : '資料缺失'}
+                    </div>
+                    <hr>
+                `;
+            });
+
+            document.getElementById('weatherInfo').innerHTML = htmlContent;
+        }
+
+        // 每 10 秒重刷一次資料
+        setInterval(fetchWeatherData, 35000);
+
+        // 頁面載入時第一次加載資料
+        fetchWeatherData();
+    </script>
+</body>
+</html>
