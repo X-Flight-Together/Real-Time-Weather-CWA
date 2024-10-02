@@ -3,82 +3,161 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>氣象資訊顯示</title>
+    <title>氣象資訊顯示 WRV</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap');
+
+        :root {
+            --primary-color: #2196F3;
+            --secondary-color: #03A9F4;
+            --background-color: #f5f7fa;
+            --card-background: #ffffff;
+            --text-color: #333333;
+            --transition-speed: 0.3s;
+        }
+
         body {
-            font-family: 'Arial', sans-serif;
+            font-family: 'Noto Sans TC', sans-serif;
             margin: 0;
-            padding: 0;
+            padding: 20px;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            transition: all var(--transition-speed);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            text-align: center;
+            margin-bottom: 30px;
+            color: var(--primary-color);
+            animation: fadeInDown 1s;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            justify-content: center;
+            animation: fadeIn 1s 0.3s both;
+        }
+
+        select {
+            padding: 12px 20px;
+            font-size: 16px;
+            border: 2px solid var(--primary-color);
+            border-radius: 8px;
+            background-color: var(--card-background);
+            color: var(--text-color);
+            cursor: pointer;
+            transition: all var(--transition-speed);
+            outline: none;
+            min-width: 150px;
+        }
+
+        select:hover {
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 10px rgba(33, 150, 243, 0.3);
+        }
+
+        .weather-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+            animation: fadeIn 1s 0.6s both;
+        }
+
+        .weather-card {
+            background-color: var(--card-background);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: all var(--transition-speed);
+            opacity: 0;
+            animation: fadeInUp 0.6s forwards;
+        }
+
+        .weather-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .weather-icon {
+            font-size: 2rem;
+            margin-bottom: 15px;
+            color: var(--primary-color);
+        }
+
+        .weather-title {
+            font-size: 1.2rem;
+            font-weight: 500;
+            margin-bottom: 10px;
+            color: var(--primary-color);
+        }
+
+        .weather-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .weather-unit {
+            font-size: 1rem;
+            color: #666;
+        }
+
+        .credits {
+            text-align: center;
+            margin-top: 30px;
+            font-size: 0.9rem;
+            color: #666;
+            animation: fadeIn 1s 0.9s both;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .loading {
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
-            background-color: #f4f4f4;
-            overflow: auto;
+            height: 200px;
         }
-        .container {
-            background-color: #ffffff;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            padding: 20px;
-            max-width: 900px;
-            width: 100%;
-            box-sizing: border-box;
-            position: relative;
+
+        .loading-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
         }
-        h1 {
-            font-size: 28px;
-            margin-bottom: 20px;
-            color: #333;
-        }
-        .controls {
-            margin-bottom: 20px;
-            display: flex;
-            gap: 10px;
-        }
-        select {
-            padding: 10px;
-            font-size: 16px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            background-color: #fff;
-            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
-        }
-        .weather-data {
-            margin-top: 10px;
-            text-align: left;
-            max-height: 80vh;
-            overflow-y: auto;
-        }
-        .weather-item {
-            margin-bottom: 15px;
-            padding: 10px;
-            border-radius: 4px;
-            background-color: #f9f9f9;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
-        .weather-item strong {
-            display: block;
-            color: #555;
-        }
-        hr {
-            border: 0;
-            border-top: 1px solid #ddd;
-            margin: 20px 0;
-        }
-        .credits {
-            position: absolute;
-            bottom: 10px;
-            right: 20px;
-            font-size: 12px;
-            color: #777;
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>即時氣象資訊</h1>
-        <div class="controls">
+        <h1 class="animate__animated animate__fadeInDown">即時氣象資訊 WRV</h1>
+        <div class="controls animate__animated animate__fadeIn">
             <select id="countySelect">
                 <option value="">選擇市區</option>
             </select>
@@ -86,11 +165,13 @@
                 <option value="">選擇鄉鎮</option>
             </select>
         </div>
-        <div id="weatherInfo" class="weather-data">
-            正在載入資料...
+        <div id="weatherInfo" class="weather-grid">
+            <div class="loading">
+                <div class="loading-spinner"></div>
+            </div>
         </div>
-        <div class="credits">
-            資料來源：中央氣象署 CWA
+        <div class="credits animate__animated animate__fadeIn">
+            由 RealTech Ltd. 進行開發，資料來源：中央氣象署 CWA
         </div>
     </div>
 
@@ -104,6 +185,8 @@
         let selectedTown = '';
 
         function fetchWeatherData() {
+            document.getElementById('weatherInfo').innerHTML = '<div class="loading"><div class="loading-spinner"></div></div>';
+            
             fetch(apiUrl)
                 .then(response => {
                     if (!response.ok) {
@@ -112,15 +195,19 @@
                     return response.json();
                 })
                 .then(data => {
-                    console.log('API 返回的資料:', data);
                     allStations = data.records.Station || [];
                     populateSelectors();
                     updateSelectors();
                     filterStations();
                 })
                 .catch(error => {
-                    document.getElementById('weatherInfo').innerHTML = '無法取得資料，錯誤信息: ' + error.message;
-                    console.error('Error fetching data:', error);
+                    document.getElementById('weatherInfo').innerHTML = `
+                        <div class="weather-card" style="grid-column: 1 / -1; text-align: center;">
+                            <div class="weather-icon"><i class="fas fa-exclamation-triangle"></i></div>
+                            <div class="weather-title">錯誤</div>
+                            <div class="weather-value">${error.message}</div>
+                        </div>
+                    `;
                 });
         }
 
@@ -128,8 +215,7 @@
             const countySelect = document.getElementById('countySelect');
             const townSelect = document.getElementById('townSelect');
 
-            // 提取唯一的市區和鄉鎮
-            counties = [...new Set(allStations.map(station => station.GeoInfo?.CountyName))];
+            counties = [...new Set(allStations.map(station => station.GeoInfo?.CountyName))].filter(Boolean);
             towns = allStations.reduce((acc, station) => {
                 const county = station.GeoInfo?.CountyName;
                 const town = station.GeoInfo?.TownName;
@@ -142,11 +228,9 @@
                 return acc;
             }, {});
 
-            // 填充市區下拉選單
-            const countyOptions = '<option value="">選擇市區</option>' + counties.map(county => `<option value="${county}">${county}</option>`).join('');
-            countySelect.innerHTML = countyOptions;
+            countySelect.innerHTML = '<option value="">選擇市區</option>' + 
+                counties.map(county => `<option value="${county}">${county}</option>`).join('');
 
-            // 設置事件監聽器
             countySelect.addEventListener('change', updateTowns);
             townSelect.addEventListener('change', filterStations);
         }
@@ -156,10 +240,9 @@
             selectedCounty = county;
             const townSelect = document.getElementById('townSelect');
 
-            // 根據選擇的市區更新鄉鎮選項
-            townSelect.innerHTML = '<option value="">選擇鄉鎮</option>' + (towns[county] ? [...towns[county]].map(town => `<option value="${town}">${town}</option>`).join('') : '');
+            townSelect.innerHTML = '<option value="">選擇鄉鎮</option>' + 
+                (towns[county] ? [...towns[county]].map(town => `<option value="${town}">${town}</option>`).join('') : '');
 
-            // 重新過濾顯示資料
             filterStations();
         }
 
@@ -167,10 +250,7 @@
             const countySelect = document.getElementById('countySelect');
             const townSelect = document.getElementById('townSelect');
             
-            // 設置市區選擇器
             countySelect.value = selectedCounty;
-
-            // 根據選擇的市區設置鄉鎮選擇器
             updateTowns();
             townSelect.value = selectedTown;
         }
@@ -189,85 +269,54 @@
             displayWeatherData(filteredStations);
         }
 
-        function formatDateTime(dateTime) {
-            if (!dateTime) return '資料缺失';
-            const date = new Date(dateTime);
-            return date.toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' });
+        function getWeatherIcon(weather) {
+            if (!weather) return 'fa-question';
+            if (weather.includes('晴')) return 'fa-sun';
+            if (weather.includes('雨')) return 'fa-cloud-rain';
+            if (weather.includes('陰')) return 'fa-cloud';
+            if (weather.includes('雲')) return 'fa-cloud-sun';
+            return 'fa-cloud';
         }
 
         function displayWeatherData(stations) {
             if (!stations || stations.length === 0) {
-                document.getElementById('weatherInfo').innerHTML = '無可顯示的氣象站資料。';
+                document.getElementById('weatherInfo').innerHTML = `
+                    <div class="weather-card" style="grid-column: 1 / -1; text-align: center;">
+                        <div class="weather-icon"><i class="fas fa-search"></i></div>
+                        <div class="weather-title">無資料</div>
+                        <div class="weather-value">該地區無可顯示的氣象站資料</div>
+                    </div>
+                `;
                 return;
             }
 
             let htmlContent = '';
-
-            stations.forEach(station => {
-                const geoInfo = station.GeoInfo || {};
-                const weatherElement = station.WeatherElement || {};
-                const gustInfo = weatherElement.GustInfo || {};
+            stations.forEach((station, index) => {
+                const weather = station.WeatherElement?.Weather || '未知';
+                const temp = station.WeatherElement?.AirTemperature || '未知';
+                const humidity = station.WeatherElement?.RelativeHumidity || '未知';
+                const windSpeed = station.WeatherElement?.WindSpeed || '未知';
 
                 htmlContent += `
-                    <div class="weather-item">
-                        <strong>觀測站名稱:</strong> ${station.StationName || '資料缺失'}
+                    <div class="weather-card" style="animation-delay: ${index * 0.1}s">
+                        <div class="weather-icon"><i class="fas ${getWeatherIcon(weather)}"></i></div>
+                        <div class="weather-title">${station.StationName || '未知站點'}</div>
+                        <div class="weather-value">${weather}</div>
+                        <hr>
+                        <div class="weather-title"><i class="fas fa-thermometer-half"></i> 溫度</div>
+                        <div class="weather-value">${temp}<span class="weather-unit">°C</span></div>
+                        <div class="weather-title"><i class="fas fa-tint"></i> 濕度</div>
+                        <div class="weather-value">${humidity}<span class="weather-unit">%</span></div>
+                        <div class="weather-title"><i class="fas fa-wind"></i> 風速</div>
+                        <div class="weather-value">${windSpeed}<span class="weather-unit">m/s</span></div>
                     </div>
-                    <div class="weather-item">
-                        <strong>觀測站代碼:</strong> ${station.StationId || '資料缺失'}
-                    </div>
-                    <div class="weather-item">
-                        <strong>觀測時間:</strong> ${formatDateTime(station.ObsTime?.DateTime) || '資料缺失'}
-                    </div>
-                    <div class="weather-item">
-                        <strong>經度:</strong> ${geoInfo.Coordinates?.[0]?.StationLongitude || '資料缺失'}
-                    </div>
-                    <div class="weather-item">
-                        <strong>緯度:</strong> ${geoInfo.Coordinates?.[0]?.StationLatitude || '資料缺失'}
-                    </div>
-                    <div class="weather-item">
-                        <strong>海拔高度:</strong> ${geoInfo.StationAltitude || '資料缺失'}
-                    </div>
-                    <div class="weather-item">
-                        <strong>縣市:</strong> ${geoInfo.CountyName || '資料缺失'}
-                    </div>
-                    <div class="weather-item">
-                        <strong>鄉鎮:</strong> ${geoInfo.TownName || '資料缺失'}
-                    </div>
-                    <div class="weather-item">
-                        <strong>天氣:</strong> ${weatherElement.Weather || '資料缺失'}
-                    </div>
-                    <div class="weather-item">
-                          <strong>降水量:</strong> ${weatherElement.Now?.Precipitation || '資料缺失'}
-                    </div>
-                    <div class="weather-item">
-                        <strong>風向:</strong> ${weatherElement.WindDirection || '資料缺失'}
-                    </div>
-                    <div class="weather-item">
-                        <strong>風速:</strong> ${weatherElement.WindSpeed || '資料缺失'}
-                    </div>
-                    <div class="weather-item">
-                        <strong>氣溫:</strong> ${weatherElement.AirTemperature || '資料缺失'}
-                    </div>
-                    <div class="weather-item">
-                        <strong>相對濕度:</strong> ${weatherElement.RelativeHumidity || '資料缺失'}
-                    </div>
-                    <div class="weather-item">
-                        <strong>氣壓:</strong> ${weatherElement.AirPressure || '資料缺失'}
-                    </div>
-                    <div class="weather-item">
-                        <strong>最大陣風速:</strong> ${gustInfo.PeakGustSpeed !== -99.0 ? gustInfo.PeakGustSpeed : '資料缺失'}
-                    </div>
-                    <hr>
                 `;
             });
 
             document.getElementById('weatherInfo').innerHTML = htmlContent;
         }
 
-        // 每 10 秒重刷一次資料
         setInterval(fetchWeatherData, 35000);
-
-        // 頁面載入時第一次加載資料
         fetchWeatherData();
     </script>
 </body>
